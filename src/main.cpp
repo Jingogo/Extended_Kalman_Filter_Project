@@ -4,169 +4,112 @@
 #include "json.hpp"
 #include "FusionEKF.h"
 #include "tools.h"
-
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
+#include <fstream>
 using std::string;
 using std::vector;
 
-// for convenience
-using json = nlohmann::json;
-
-// Checks if the SocketIO event has JSON data.
-// If there is data the JSON object in string format will be returned,
-// else the empty string "" will be returned.
-string hasData(string s) {
-  auto found_null = s.find("null");
-  auto b1 = s.find_first_of("[");
-  auto b2 = s.find_first_of("]");
-  if (found_null != string::npos) {
-    return "";
-  }
-  else if (b1 != string::npos && b2 != string::npos) {
-    return s.substr(b1, b2 - b1 + 1);
-  }
-  return "";
-}
-
-int main() {
-  uWS::Hub h;
-
-  // Create a Kalman Filter instance
-  FusionEKF fusionEKF;
-
-  // used to compute the RMSE later
-  Tools tools;
-  vector<VectorXd> estimations;
-  vector<VectorXd> ground_truth;
-
-  h.onMessage([&fusionEKF,&tools,&estimations,&ground_truth]
-              (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
-               uWS::OpCode opCode) {
-    // "42" at the start of the message means there's a websocket message event.
-    // The 4 signifies a websocket message
-    // The 2 signifies a websocket event
-    if (length && length > 2 && data[0] == '4' && data[1] == '2') {
-      auto s = hasData(string(data));
-
-      if (s != "") {
-        auto j = json::parse(s);
-
-        string event = j[0].get<string>();
-        
-        if (event == "telemetry") {
-          // j[1] is the data JSON object
-          string sensor_measurement = j[1]["sensor_measurement"];
-          
-          MeasurementPackage meas_package;
-          std::istringstream iss(sensor_measurement);
-          
-          long long timestamp;
-
-          // reads first element from the current line
-          string sensor_type;
-          iss >> sensor_type;
-
-          if (sensor_type.compare("L") == 0) {
-            meas_package.sensor_type_ = MeasurementPackage::LASER;
-            meas_package.raw_measurements_ = VectorXd(2);
-            float px;
-            float py;
-            iss >> px;
-            iss >> py;
-            meas_package.raw_measurements_ << px, py;
-            iss >> timestamp;
-            meas_package.timestamp_ = timestamp;
-          } else if (sensor_type.compare("R") == 0) {
-            meas_package.sensor_type_ = MeasurementPackage::RADAR;
-            meas_package.raw_measurements_ = VectorXd(3);
-            float ro;
-            float theta;
-            float ro_dot;
-            iss >> ro;
-            iss >> theta;
-            iss >> ro_dot;
-            meas_package.raw_measurements_ << ro,theta, ro_dot;
-            iss >> timestamp;
-            meas_package.timestamp_ = timestamp;
-          }
-
-          float x_gt;
-          float y_gt;
-          float vx_gt;
-          float vy_gt;
-          iss >> x_gt;
-          iss >> y_gt;
-          iss >> vx_gt;
-          iss >> vy_gt;
-
-          VectorXd gt_values(4);
-          gt_values(0) = x_gt;
-          gt_values(1) = y_gt; 
-          gt_values(2) = vx_gt;
-          gt_values(3) = vy_gt;
-          ground_truth.push_back(gt_values);
-          
-          // Call ProcessMeasurement(meas_package) for Kalman filter
-          fusionEKF.ProcessMeasurement(meas_package);       
-
-          // Push the current estimated x,y positon from the Kalman filter's 
-          //   state vector
-
-          VectorXd estimate(4);
-
-          double p_x = fusionEKF.ekf_.x_(0);
-          double p_y = fusionEKF.ekf_.x_(1);
-          double v1  = fusionEKF.ekf_.x_(2);
-          double v2 = fusionEKF.ekf_.x_(3);
-
-          estimate(0) = p_x;
-          estimate(1) = p_y;
-          estimate(2) = v1;
-          estimate(3) = v2;
-        
-          estimations.push_back(estimate);
-
-          VectorXd RMSE = tools.CalculateRMSE(estimations, ground_truth);
-
-          json msgJson;
-          msgJson["estimate_x"] = p_x;
-          msgJson["estimate_y"] = p_y;
-          msgJson["rmse_x"] =  RMSE(0);
-          msgJson["rmse_y"] =  RMSE(1);
-          msgJson["rmse_vx"] = RMSE(2);
-          msgJson["rmse_vy"] = RMSE(3);
-          auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
-          // std::cout << msg << std::endl;
-          ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-
-        }  // end "telemetry" if
-
-      } else {
-        string msg = "42[\"manual\",{}]";
-        ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
-      }
-    }  // end websocket message if
-
-  }); // end h.onMessage
-
-  h.onConnection([&h](uWS::WebSocket<uWS::SERVER> ws, uWS::HttpRequest req) {
-    std::cout << "Connected!!!" << std::endl;
-  });
-
-  h.onDisconnection([&h](uWS::WebSocket<uWS::SERVER> ws, int code, 
-                         char *message, size_t length) {
-    ws.close();
-    std::cout << "Disconnected" << std::endl;
-  });
-
-  int port = 4567;
-  if (h.listen(port)) {
-    std::cout << "Listening to port " << port << std::endl;
-  } else {
-    std::cerr << "Failed to listen to port" << std::endl;
+int main(int argc, char *argv[])
+{
+  if (argc != 2)
+  {
+    std::cout << "The programsneed two arguments" << std::endl;
     return -1;
   }
-  
-  h.run();
+
+  std::ifstream input_file(argv[1]);
+  if (!input_file.is_open())
+  {
+    std::cout << "Could not open file" << argv[1] << std::endl;
+  }
+
+  FusionEKF fusionEKF;
+  vector<Eigen::VectorXd> estimations;
+  vector<Eigen::VectorXd> ground_truth;
+
+  int cnt = 1;
+  std::string line;
+  while (std::getline(input_file, line))
+  {
+    std::cout << "iteration:" << cnt << std::endl;
+    std::istringstream iss(line);
+    std::string sensor_type;
+    iss >> sensor_type;
+    MeasurementPackage meas_package;
+
+    if (sensor_type.compare("L") == 0)
+    {
+      meas_package.sensor_type_ = MeasurementPackage::LASER;
+      meas_package.raw_measurements_ = Eigen::VectorXd(2);
+      float px;
+      float py;
+      iss >> px;
+      iss >> py;
+      meas_package.raw_measurements_ << px, py;
+    }
+    else if (sensor_type.compare("R") == 0)
+    {
+      meas_package.sensor_type_ = MeasurementPackage::RADAR;
+      meas_package.raw_measurements_ = Eigen::VectorXd(3);
+      float ro;
+      float theta;
+      float ro_dot;
+      iss >> ro;
+      iss >> theta;
+      iss >> ro_dot;
+      //theta = tools::normalizeTheta(theta);
+      meas_package.raw_measurements_ << ro, theta, ro_dot;
+    }
+
+    long long timestamp;
+    iss >> timestamp;
+    meas_package.timestamp_ = timestamp;
+
+    float x_gt;
+    float y_gt;
+    float vx_gt;
+    float vy_gt;
+    iss >> x_gt;
+    iss >> y_gt;
+    iss >> vx_gt;
+    iss >> vy_gt;
+
+    Eigen::VectorXd gt_values(4);
+    gt_values(0) = x_gt;
+    gt_values(1) = y_gt;
+    gt_values(2) = vx_gt;
+    gt_values(3) = vy_gt;
+    ground_truth.push_back(gt_values);
+
+    // Call ProcessMeasurement(meas_package) for Kalman filter
+
+
+    if (cnt == 400)
+    {
+      std::cout<<cnt<<std::endl;
+    }
+    fusionEKF.processMeasurement(meas_package);
+    
+
+    // Push the current estimated x,y positon from the Kalman filter's
+    //   state vector
+
+    Eigen::VectorXd estimate(4);
+    Eigen::VectorXd x = fusionEKF.ekf_.getX();
+    double p_x = x(0);
+    double p_y = x(1);
+    double v1 = x(2);
+    double v2 = x(3);
+    
+    estimate(0) = p_x;
+    estimate(1) = p_y;
+    estimate(2) = v1;
+    estimate(3) = v2;
+
+    estimations.push_back(estimate);
+    Eigen::VectorXd RMSE = tools::calculateRMSE(estimations, ground_truth);
+    cnt += 1;
+    std::cout << "Estimation: x,y,vx,vy\n" << estimate << std::endl;
+    std::cout << "ground_truth: x,y,vx,vy\n" << gt_values << std::endl;
+    std::cout << "RMSE: x,y,vx,vy\n" << RMSE << std::endl;
+  }
 }
