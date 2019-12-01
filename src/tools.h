@@ -5,7 +5,8 @@
 #include "Eigen/Dense"
 #include "measurement_package.h"
 
-namespace tools{
+namespace tools
+{
   Eigen::VectorXd calculateRMSE(const std::vector<Eigen::VectorXd> &estimations,
                                 const std::vector<Eigen::VectorXd> &ground_truth);
   double addEpsIfZero(double div);
