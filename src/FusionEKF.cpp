@@ -1,40 +1,8 @@
-#include "FusionEKF.h"
 #include <iostream>
-#include "Eigen/Dense"
-#include "tools.h"
 #include <cmath>
-
-using std::cout;
-using std::endl;
-
-FusionEKF::FusionEKF()
-{
-  is_initialized_ = false;
-  previous_timestamp_ = 0;
-
-  R_laser_ = Eigen::MatrixXd(2, 2);
-  R_radar_ = Eigen::MatrixXd(3, 3);
-  H_laser_ = Eigen::MatrixXd(2, 4);
-
-  //measurement covariance matrix - laser
-  R_laser_ << 0.0225, 0,
-      0, 0.0225;
-
-  //measurement covariance matrix - radar
-  R_radar_ << 0.09, 0, 0,
-      0, 0.0009, 0,
-      0, 0, 0.09;
-
-  /**
-   * TODO: Finish initializing the FusionEKF.
-   * TODO: Set the process and measurement noises
-   */
-  H_laser_ << 1.0, 0, 0, 0,
-      0, 1.0, 0, 0;
-
-  noise_ax_ = 9.0;
-  noise_ay_ = 9.0;
-}
+#include "Eigen/Dense"
+#include "FusionEKF.h"
+#include "tools.h"
 
 FusionEKF::~FusionEKF() {}
 
@@ -129,10 +97,12 @@ void FusionEKF::updateQ(const double &dt)
   const double dt_2 = dt * dt;
   const double dt_3 = dt_2 * dt;
   const double dt_4 = dt_3 * dt;
-  Q_new << dt_4 * noise_ax_ / 4, 0, dt_3 * noise_ax_ / 2, 0,
-           0, dt_4 * noise_ay_ / 4, 0, dt_3 * noise_ay_ / 2,
-           dt_3 * noise_ax_ / 2, 0, dt_2 * noise_ax_, 0,
-           0, dt_3 * noise_ay_ / 2, 0, dt_2 * noise_ay_;
+  double noise_ax = noise_(0);
+  double noise_ay = noise_(1);
+  Q_new << dt_4 * noise_ax / 4, 0, dt_3 * noise_ax / 2, 0,
+           0, dt_4 * noise_ay / 4, 0, dt_3 * noise_ay / 2,
+           dt_3 * noise_ax / 2, 0, dt_2 * noise_ax, 0,
+           0, dt_3 * noise_ay / 2, 0, dt_2 * noise_ay;
 
   ekf_.setQ(Q_new);
 }

@@ -19,11 +19,26 @@ int main(int argc, char *argv[]){
     std::cout << "Could not open data file" << argv[1] << std::endl;
   }
 
-  FusionEKF fusionEKF;
+  Eigen::MatrixXd R_laser(2, 2);
+  Eigen::MatrixXd R_radar(3, 3);
+  Eigen::MatrixXd H_laser(2, 4);
+  Eigen::VectorXd noise(2);
+  //measurement covariance matrix - laser
+  R_laser << 0.0225, 0,
+              0, 0.0225;
+  //measurement covariance matrix - radar
+  R_radar << 0.09, 0, 0,
+              0, 0.0009, 0,
+              0, 0, 0.09;
+  H_laser << 1.0, 0, 0, 0,
+              0, 1.0, 0, 0;   
+  noise << 9.0, 9.0;
+                      
+  FusionEKF fusionEKF(R_laser, R_radar, H_laser, noise);
   std::vector<Eigen::VectorXd> estimations;
   std::vector<Eigen::VectorXd> ground_truth;
   std::string line;
-  
+
   while (std::getline(input_file, line)){  
     std::istringstream iss(line);
 
