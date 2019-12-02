@@ -8,63 +8,64 @@ FusionEKF::~FusionEKF() {}
 
 void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack)
 {
-  Eigen::VectorXd raw_measurements = measurement_pack.raw_measurements_;
-  MeasurementPackage::SensorType sensor_type = measurement_pack.sensor_type_;
-  long long new_timestamp = measurement_pack.timestamp_;
-  double dt = (new_timestamp - previous_timestamp_) / 1000000.0;
-
+  readMeasurementPackage(measurement_pack);
   if (!is_initialized_)
   {
-    initX(raw_measurements, sensor_type);
-    initP();
-    updateTimestamp(new_timestamp);
-    is_initialized_ = true;
+    initializeFusionEKF();
     return;
   }
 
-  updateF(dt);
-  updateQ(dt);
+  updateF();
+  updateQ();
   ekf_.predict();
 
-  if (sensor_type == MeasurementPackage::RADAR)
+  if (sensor_type_ == MeasurementPackage::RADAR)
   {
     updateJacobianH();
-    updateR(R_radar_);
-    ekf_.updateEKF(raw_measurements);
+    updateR(measurement_noise_cov_radar_);
+
+    ekf_.updateEKF(measurements_);
   }
   else
   {
-    updateH(H_laser_);
-    updateR(R_laser_);
-    ekf_.update(raw_measurements);
+    updateH(measurement_matrix_laser_);
+    updateR(measurement_noise_cov_laser_);
+    ekf_.update(measurements_);
   }
-
-  updateTimestamp(new_timestamp);
-
-  //printOutput();
 }
 
-void FusionEKF::initX(const Eigen::VectorXd raw_measurements,
-                      const MeasurementPackage::SensorType &sensor_type)
+void FusionEKF::readMeasurementPackage(const MeasurementPackage &measurement_pack)
 {
+  measurements_ = measurement_pack.raw_measurements_;
+  sensor_type_ = measurement_pack.sensor_type_;
+  long long new_timestamp = measurement_pack.timestamp_;
+  dt_ = (new_timestamp - previous_timestamp_) / 1000000.0;
+  previous_timestamp_ = new_timestamp;
+}
 
+void FusionEKF::initializeFusionEKF()
+{
+  initX();
+  initP();
+  is_initialized_ = true;
+}
+
+void FusionEKF::initX()
+{
   Eigen::VectorXd x_init(4);
   x_init << 0, 0, 0, 0;
 
-  if (sensor_type == MeasurementPackage::RADAR)
+  if (sensor_type_ == MeasurementPackage::RADAR)
   {
-    // TODO: Convert radar from polar to cartesian coordinates
-    //         and initialize state.
-    const double  ro = raw_measurements[0];
-    const double theta = raw_measurements[1];
+    const double ro = measurements_[0];
+    const double theta = measurements_[1];
     x_init[0] = ro * cos(theta);
     x_init[1] = ro * sin(theta);
   }
-  else if (sensor_type == MeasurementPackage::LASER)
+  else if (sensor_type_ == MeasurementPackage::LASER)
   {
-    // TODO: Initialize state.
-    x_init[0] = raw_measurements[0];
-    x_init[1] = raw_measurements[1];
+    x_init[0] = measurements_[0];
+    x_init[1] = measurements_[1];
   }
 
   ekf_.setX(x_init);
@@ -80,29 +81,29 @@ void FusionEKF::initP()
   ekf_.setP(P_init);
 }
 
-void FusionEKF::updateF(const double &dt)
+void FusionEKF::updateF()
 {
   Eigen::MatrixXd F_new(4, 4);
-  F_new << 1, 0, dt, 0,
-           0, 1, 0, dt,
-           0, 0, 1, 0,
-           0, 0, 0, 1;
+  F_new << 1, 0, dt_, 0,
+      0, 1, 0, dt_,
+      0, 0, 1, 0,
+      0, 0, 0, 1;
 
   ekf_.setF(F_new);
 }
 
-void FusionEKF::updateQ(const double &dt)
+void FusionEKF::updateQ()
 {
   Eigen::MatrixXd Q_new(4, 4);
-  const double dt_2 = dt * dt;
-  const double dt_3 = dt_2 * dt;
-  const double dt_4 = dt_3 * dt;
+  const double dt_2 = dt_ * dt_;
+  const double dt_3 = dt_2 * dt_;
+  const double dt_4 = dt_3 * dt_;
   double noise_ax = noise_(0);
   double noise_ay = noise_(1);
   Q_new << dt_4 * noise_ax / 4, 0, dt_3 * noise_ax / 2, 0,
-           0, dt_4 * noise_ay / 4, 0, dt_3 * noise_ay / 2,
-           dt_3 * noise_ax / 2, 0, dt_2 * noise_ax, 0,
-           0, dt_3 * noise_ay / 2, 0, dt_2 * noise_ay;
+      0, dt_4 * noise_ay / 4, 0, dt_3 * noise_ay / 2,
+      dt_3 * noise_ax / 2, 0, dt_2 * noise_ax, 0,
+      0, dt_3 * noise_ay / 2, 0, dt_2 * noise_ay;
 
   ekf_.setQ(Q_new);
 }
@@ -120,11 +121,6 @@ void FusionEKF::updateH(const Eigen::MatrixXd &H_new)
 void FusionEKF::updateR(const Eigen::MatrixXd &R_new)
 {
   ekf_.setR(R_new);
-}
-
-void FusionEKF::updateTimestamp(const long long &new_timestamp)
-{
-  previous_timestamp_ = new_timestamp;
 }
 
 void FusionEKF::printOutput()

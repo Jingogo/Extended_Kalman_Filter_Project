@@ -25,13 +25,13 @@ int main(int argc, char *argv[]){
   Eigen::VectorXd noise(2);
   //measurement covariance matrix - laser
   R_laser << 0.0225, 0,
-              0, 0.0225;
+             0, 0.0225;
   //measurement covariance matrix - radar
   R_radar << 0.09, 0, 0,
-              0, 0.0009, 0,
-              0, 0, 0.09;
+             0, 0.0009, 0,
+             0, 0, 0.09;
   H_laser << 1.0, 0, 0, 0,
-              0, 1.0, 0, 0;   
+             0, 1.0, 0, 0;   
   noise << 9.0, 9.0;
                       
   FusionEKF fusionEKF(R_laser, R_radar, H_laser, noise);

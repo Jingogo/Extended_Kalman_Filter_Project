@@ -13,20 +13,21 @@ class FusionEKF
 {
 public:
   FusionEKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::MatrixXd H_laser,
-            Eigen::VectorXd noise): R_laser_(R_laser), R_radar_(R_radar), 
-            H_laser_(H_laser), noise_(noise){};
+            Eigen::VectorXd noise): measurement_noise_cov_laser_(R_laser),
+            measurement_noise_cov_radar_(R_radar), 
+            measurement_matrix_laser_(H_laser), noise_(noise){};
   virtual ~FusionEKF();
 
   void processMeasurement(const MeasurementPackage &measurement_pack);
-  void initX(const Eigen::VectorXd raw_measurements,
-             const MeasurementPackage::SensorType &sensor_type);
+  void readMeasurementPackage(const MeasurementPackage &measurement_pack);
+  void initializeFusionEKF();
+  void initX();
   void initP();
-  void updateF(const double &delta_t);
-  void updateQ(const double &delta_t);  
+  void updateF();
+  void updateQ();  
   void updateJacobianH();
   void updateH(const Eigen::MatrixXd &H_new);
   void updateR(const Eigen::MatrixXd &R_new);
-  void updateTimestamp(const long long &new_timestamp);
   void printOutput();
 
   KalmanFilter ekf_;
@@ -35,9 +36,12 @@ public:
  private:
   bool is_initialized_ = false;
   long long previous_timestamp_ = 0;
-  Eigen::MatrixXd R_laser_;
-  Eigen::MatrixXd R_radar_;
-  Eigen::MatrixXd H_laser_;
+  Eigen::VectorXd measurements_;
+  double dt_ = 0.0;
+  MeasurementPackage::SensorType sensor_type_ = MeasurementPackage::RADAR;
+  Eigen::MatrixXd measurement_noise_cov_laser_;
+  Eigen::MatrixXd measurement_noise_cov_radar_;
+  Eigen::MatrixXd measurement_matrix_laser_;
   Eigen::VectorXd noise_;
 };
 
