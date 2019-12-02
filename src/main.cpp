@@ -5,7 +5,7 @@
 #include <math.h>
 #include <uWS/uWS.h>
 #include "json.hpp"
-#include "FusionEKF.h"
+#include "EKF.h"
 #include "tools.h"
 
 int main(int argc, char *argv[]){
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]){
              0, 1.0, 0, 0;   
   noise << 9.0, 9.0;
                       
-  FusionEKF fusionEKF(R_laser, R_radar, H_laser, noise);
+  EKF EKF(R_laser, R_radar, H_laser, noise);
   std::vector<Eigen::VectorXd> estimations;
   std::vector<Eigen::VectorXd> ground_truth;
   std::string line;
@@ -43,11 +43,11 @@ int main(int argc, char *argv[]){
     std::istringstream iss(line);
 
     MeasurementPackage meas_package = tools::readMeasurement(iss);
-    fusionEKF.processMeasurement(meas_package);
+    EKF.processMeasurement(meas_package);
 
     Eigen::VectorXd gt_values = tools::readGroundTruth(iss);
     ground_truth.push_back(gt_values);
-    Eigen::VectorXd estimate = fusionEKF.ekf_.getX();
+    Eigen::VectorXd estimate = EKF.ekf_.getX();
     estimations.push_back(estimate);
 
     Eigen::VectorXd RMSE = tools::calculateRMSE(estimations, ground_truth);

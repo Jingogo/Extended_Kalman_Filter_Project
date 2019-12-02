@@ -1,17 +1,17 @@
 #include <iostream>
 #include <cmath>
 #include "Eigen/Dense"
-#include "FusionEKF.h"
+#include "EKF.h"
 #include "tools.h"
 
-FusionEKF::~FusionEKF() {}
+EKF::~EKF() {}
 
-void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack)
+void EKF::processMeasurement(const MeasurementPackage &measurement_pack)
 {
   readMeasurementPackage(measurement_pack);
   if (!is_initialized_)
   {
-    initializeFusionEKF();
+    initializeEKF();
     return;
   }
 
@@ -34,7 +34,7 @@ void FusionEKF::processMeasurement(const MeasurementPackage &measurement_pack)
   }
 }
 
-void FusionEKF::readMeasurementPackage(const MeasurementPackage &measurement_pack)
+void EKF::readMeasurementPackage(const MeasurementPackage &measurement_pack)
 {
   measurements_ = measurement_pack.raw_measurements_;
   sensor_type_ = measurement_pack.sensor_type_;
@@ -43,14 +43,14 @@ void FusionEKF::readMeasurementPackage(const MeasurementPackage &measurement_pac
   previous_timestamp_ = new_timestamp;
 }
 
-void FusionEKF::initializeFusionEKF()
+void EKF::initializeEKF()
 {
   initX();
   initP();
   is_initialized_ = true;
 }
 
-void FusionEKF::initX()
+void EKF::initX()
 {
   Eigen::VectorXd x_init(4);
   x_init << 0, 0, 0, 0;
@@ -71,7 +71,7 @@ void FusionEKF::initX()
   ekf_.setX(x_init);
 }
 
-void FusionEKF::initP()
+void EKF::initP()
 {
   Eigen::MatrixXd P_init(4, 4);
   P_init << 1., 0, 0, 0,
@@ -81,7 +81,7 @@ void FusionEKF::initP()
   ekf_.setP(P_init);
 }
 
-void FusionEKF::updateF()
+void EKF::updateF()
 {
   Eigen::MatrixXd F_new(4, 4);
   F_new << 1, 0, dt_, 0,
@@ -92,7 +92,7 @@ void FusionEKF::updateF()
   ekf_.setF(F_new);
 }
 
-void FusionEKF::updateQ()
+void EKF::updateQ()
 {
   Eigen::MatrixXd Q_new(4, 4);
   const double dt_2 = dt_ * dt_;
@@ -108,22 +108,22 @@ void FusionEKF::updateQ()
   ekf_.setQ(Q_new);
 }
 
-void FusionEKF::updateJacobianH()
+void EKF::updateJacobianH()
 {
   ekf_.setJacobianH();
 }
 
-void FusionEKF::updateH(const Eigen::MatrixXd &H_new)
+void EKF::updateH(const Eigen::MatrixXd &H_new)
 {
   ekf_.setH(H_new);
 }
 
-void FusionEKF::updateR(const Eigen::MatrixXd &R_new)
+void EKF::updateR(const Eigen::MatrixXd &R_new)
 {
   ekf_.setR(R_new);
 }
 
-void FusionEKF::printOutput()
+void EKF::printOutput()
 {
   std::cout << "x_ = " << ekf_.getX() << std::endl;
   std::cout << "P_ = " << ekf_.getP() << std::endl;

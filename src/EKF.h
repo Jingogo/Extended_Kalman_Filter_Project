@@ -1,5 +1,5 @@
-#ifndef FusionEKF_H_
-#define FusionEKF_H_
+#ifndef EKF_H_
+#define EKF_H_
 
 #include <fstream>
 #include <string>
@@ -9,18 +9,18 @@
 #include "measurement_package.h"
 #include "tools.h"
 
-class FusionEKF 
+class EKF 
 {
 public:
-  FusionEKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::MatrixXd H_laser,
+  EKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::MatrixXd H_laser,
             Eigen::VectorXd noise): measurement_noise_cov_laser_(R_laser),
             measurement_noise_cov_radar_(R_radar), 
             measurement_matrix_laser_(H_laser), noise_(noise){};
-  virtual ~FusionEKF();
+  virtual ~EKF();
 
   void processMeasurement(const MeasurementPackage &measurement_pack);
   void readMeasurementPackage(const MeasurementPackage &measurement_pack);
-  void initializeFusionEKF();
+  void initializeEKF();
   void initX();
   void initP();
   void updateF();
@@ -45,4 +45,4 @@ public:
   Eigen::VectorXd noise_;
 };
 
-#endif // FusionEKF_H_
+#endif // EKF_H_
