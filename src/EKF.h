@@ -9,39 +9,46 @@
 #include "measurement_package.h"
 #include "tools.h"
 
-class EKF 
-{
+class EKF{
 public:
-  EKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::MatrixXd H_laser,
-            Eigen::VectorXd noise): measurement_noise_cov_laser_(R_laser),
-            measurement_noise_cov_radar_(R_radar), 
-            measurement_matrix_laser_(H_laser), noise_(noise){};
+  EKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::VectorXd noise);
   virtual ~EKF();
-
+  bool isInitialized(){return is_initialized_;};
   void processMeasurement(const MeasurementPackage &measurement_pack);
   void readMeasurementPackage(const MeasurementPackage &measurement_pack);
-  void initializeEKF();
-  void initX();
-  void initP();
-  void updateF();
-  void updateQ();  
-  void updateJacobianH();
-  void updateH(const Eigen::MatrixXd &H_new);
-  void updateR(const Eigen::MatrixXd &R_new);
-  void printOutput();
+  void initEKF();
+  void initStateMean();
+  void initStateCov();
+  void predictState();
+  void updateStateTransitionMatrix();
+  void updateProcessNoiseCov();
+  void updateState();
+  void updateStateByRadar();
+  void updateStateByLaser();
+  void updateRadarMeasurementMatrix();
+  Eigen::MatrixXd calculateJacobian();
+  Eigen::VectorXd PredMeasurement();
+  bool isRadar(){return sensor_type_ == MeasurementPackage::RADAR;};
+  bool isLaser(){return sensor_type_ == MeasurementPackage::LASER;};
 
-  KalmanFilter ekf_;
+  Eigen::VectorXd getStateMean();
 
 
  private:
   bool is_initialized_ = false;
   long long previous_timestamp_ = 0;
-  Eigen::VectorXd measurements_;
+  Eigen::VectorXd measurement_;
   double dt_ = 0.0;
   MeasurementPackage::SensorType sensor_type_ = MeasurementPackage::RADAR;
-  Eigen::MatrixXd measurement_noise_cov_laser_;
-  Eigen::MatrixXd measurement_noise_cov_radar_;
-  Eigen::MatrixXd measurement_matrix_laser_;
+
+  Eigen::VectorXd state_mean_;
+  Eigen::MatrixXd state_cov_;
+  Eigen::MatrixXd state_transition_matrix_;
+  Eigen::MatrixXd process_noise_cov_;
+  Eigen::MatrixXd laser_measurement_noise_cov_;
+  Eigen::MatrixXd radar_measurement_noise_cov_;
+  Eigen::MatrixXd laser_measurement_matrix_;
+  Eigen::MatrixXd radar_measurement_matrix_;
   Eigen::VectorXd noise_;
 };
 

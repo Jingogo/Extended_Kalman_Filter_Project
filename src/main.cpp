@@ -21,7 +21,6 @@ int main(int argc, char *argv[]){
 
   Eigen::MatrixXd R_laser(2, 2);
   Eigen::MatrixXd R_radar(3, 3);
-  Eigen::MatrixXd H_laser(2, 4);
   Eigen::VectorXd noise(2);
   //measurement covariance matrix - laser
   R_laser << 0.0225, 0,
@@ -30,11 +29,10 @@ int main(int argc, char *argv[]){
   R_radar << 0.09, 0, 0,
              0, 0.0009, 0,
              0, 0, 0.09;
-  H_laser << 1.0, 0, 0, 0,
-             0, 1.0, 0, 0;   
+ 
   noise << 9.0, 9.0;
                       
-  EKF EKF(R_laser, R_radar, H_laser, noise);
+  EKF EKF(R_laser, R_radar,  noise);
   std::vector<Eigen::VectorXd> estimations;
   std::vector<Eigen::VectorXd> ground_truth;
   std::string line;
@@ -47,7 +45,7 @@ int main(int argc, char *argv[]){
 
     Eigen::VectorXd gt_values = tools::readGroundTruth(iss);
     ground_truth.push_back(gt_values);
-    Eigen::VectorXd estimate = EKF.ekf_.getX();
+    Eigen::VectorXd estimate = EKF.getStateMean();
     estimations.push_back(estimate);
 
     Eigen::VectorXd RMSE = tools::calculateRMSE(estimations, ground_truth);

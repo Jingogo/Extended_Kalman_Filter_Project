@@ -14,15 +14,6 @@ void KalmanFilter::predict()
 {
   x_ = F_ * x_;
   P_ = F_ * P_ * F_.transpose() + Q_;
-  // std::cout<<"during predict" <<std::endl;
-  // std::cout << " actual x_ :\n"
-  //           << x_ << std::endl;
-  // std::cout << " actual F_ :\n"
-  //           << F_ << std::endl;
-  // std::cout << " actual Q_ :\n"
-  //           << Q_ << std::endl;
-  // std::cout << " actual P_ :\n"
-  //           << P_ << std::endl;
 }
 
 void KalmanFilter::update(const Eigen::VectorXd &z)

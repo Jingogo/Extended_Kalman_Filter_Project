@@ -10,7 +10,7 @@ namespace tools
   Eigen::VectorXd calculateRMSE(const std::vector<Eigen::VectorXd> &estimations,
                                 const std::vector<Eigen::VectorXd> &ground_truth);
   double addEpsIfZero(double div);
-  double normalizeTheta(double theta);
+  void normalizeRadarMeasurement(Eigen::VectorXd &measurement);
   MeasurementPackage readMeasurement(std::istringstream &iss);
   Eigen::VectorXd readGroundTruth(std::istringstream &iss);
 } // namespace tools

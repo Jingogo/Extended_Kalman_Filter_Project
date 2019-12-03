@@ -41,19 +41,16 @@ double addEpsIfZero(double div)
   return div;
 }
 
-double normalizeTheta(double theta)
+void normalizeRadarMeasurement(Eigen::VectorXd &measurement)
 {
-  if (theta > M_PI)
-  {
+  double theta = measurement[1];
+  if (theta > M_PI){
     theta -= 2*M_PI;
   }
-
-  if (theta < -M_PI) 
-  {
+  if (theta < -M_PI){
     theta += 2*M_PI;
   }
-
-  return theta;
+  measurement[1] = theta;
 }
 
 MeasurementPackage readMeasurement(std::istringstream &iss)
