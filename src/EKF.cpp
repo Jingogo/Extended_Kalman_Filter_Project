@@ -5,34 +5,38 @@
 #include "tools.h"
 
 EKF::EKF(Eigen::MatrixXd R_laser, Eigen::MatrixXd R_radar, Eigen::VectorXd noise):
-        laser_measurement_noise_cov_(R_laser),
-        radar_measurement_noise_cov_(R_radar), 
-        noise_(noise){
-
+         laser_measurement_noise_cov_(R_laser),
+         radar_measurement_noise_cov_(R_radar),
+         noise_(noise)
+{
   state_mean_ = Eigen::VectorXd(4);
-  state_cov_ = Eigen::MatrixXd(4,4);
-  state_transition_matrix_ = Eigen::MatrixXd(4,4);
-  process_noise_cov_ = Eigen::MatrixXd(4,4);
-  laser_measurement_matrix_ = Eigen::MatrixXd(2,4);
+  state_cov_ = Eigen::MatrixXd(4, 4);
+  state_transition_matrix_ = Eigen::MatrixXd(4, 4);
+  process_noise_cov_ = Eigen::MatrixXd(4, 4);
+  laser_measurement_matrix_ = Eigen::MatrixXd(2, 4);
   laser_measurement_matrix_ << 1.0, 0, 0, 0,
-                               0, 1.0, 0, 0;  
+      0, 1.0, 0, 0;
   radar_measurement_matrix_ = Eigen::MatrixXd(3, 4);
 };
 
 EKF::~EKF() {}
 
-void EKF::processMeasurement(const MeasurementPackage &measurement_pack){  
+void EKF::processMeasurement(const MeasurementPackage &measurement_pack)
+{
   readMeasurementPackage(measurement_pack);
-  if (!isInitialized()){
+  if (!isInitialized())
+  {
     initEKF();
   }
-  else{
+  else
+  {
     predictState();
     updateState();
   }
 }
 
-void EKF::readMeasurementPackage(const MeasurementPackage &measurement_pack){
+void EKF::readMeasurementPackage(const MeasurementPackage &measurement_pack)
+{
   measurement_ = measurement_pack.raw_measurements_;
   sensor_type_ = measurement_pack.sensor_type_;
   long long new_timestamp = measurement_pack.timestamp_;
@@ -40,51 +44,57 @@ void EKF::readMeasurementPackage(const MeasurementPackage &measurement_pack){
   previous_timestamp_ = new_timestamp;
 }
 
-void EKF::initEKF(){
+void EKF::initEKF()
+{
   initStateMean();
   initStateCov();
   is_initialized_ = true;
 }
 
-void EKF::initStateMean(){
+void EKF::initStateMean()
+{
   double px, py;
-  if (isRadar()){
+  if (isRadar())
+  {
     const double ro = measurement_[0];
     const double theta = measurement_[1];
     px = ro * cos(theta);
     py = ro * sin(theta);
   }
-  else if (isLaser()){
+  else if (isLaser())
+  {
     px = measurement_[0];
     py = measurement_[1];
   }
-  
   state_mean_ << px, py, 0, 0;
 }
 
-void EKF::initStateCov(){
+void EKF::initStateCov()
+{
   state_cov_ << 1., 0, 0, 0,
       0, 1., 0, 0,
       0, 0, 1000., 0,
       0, 0, 0, 1000.;
 }
 
-void EKF::predictState(){
+void EKF::predictState()
+{
   updateStateTransitionMatrix();
   updateProcessNoiseCov();
   state_mean_ = state_transition_matrix_ * state_mean_;
-  state_cov_ = state_transition_matrix_ * state_cov_ * state_transition_matrix_.transpose()
-               + process_noise_cov_;
+  state_cov_ = state_transition_matrix_ * state_cov_ * state_transition_matrix_.transpose() + process_noise_cov_;
 }
 
-void EKF::updateStateTransitionMatrix(){
+void EKF::updateStateTransitionMatrix()
+{
   state_transition_matrix_ << 1, 0, dt_, 0,
-                              0, 1, 0, dt_,
-                              0, 0, 1, 0,
-                              0, 0, 0, 1;
+      0, 1, 0, dt_,
+      0, 0, 1, 0,
+      0, 0, 0, 1;
 }
 
-void EKF::updateProcessNoiseCov(){
+void EKF::updateProcessNoiseCov()
+{
   const double dt_2 = dt_ * dt_;
   const double dt_3 = dt_2 * dt_;
   const double dt_4 = dt_3 * dt_;
@@ -96,20 +106,23 @@ void EKF::updateProcessNoiseCov(){
       0, dt_3 * noise_ay / 2, 0, dt_2 * noise_ay;
 }
 
-void EKF::updateState(){
-  if (isRadar()){
+void EKF::updateState()
+{
+  if (isRadar())
+  {
     updateStateByRadar();
   }
-  else if (isLaser()){
+  else if (isLaser())
+  {
     updateStateByLaser();
   }
 }
 
-void EKF::updateStateByRadar(){
+void EKF::updateStateByRadar()
+{
   updateRadarMeasurementMatrix();
   Eigen::MatrixXd Ht = radar_measurement_matrix_.transpose();
-  Eigen::MatrixXd S = (radar_measurement_matrix_ * state_cov_) * Ht 
-                      + radar_measurement_noise_cov_;
+  Eigen::MatrixXd S = (radar_measurement_matrix_ * state_cov_) * Ht + radar_measurement_noise_cov_;
   Eigen::MatrixXd K = state_cov_ * Ht * S.inverse();
   Eigen::VectorXd pred_measurement = PredMeasurement();
   Eigen::VectorXd measurement_diff = measurement_ - pred_measurement;
@@ -119,10 +132,10 @@ void EKF::updateStateByRadar(){
   state_cov_ = (I - K * radar_measurement_matrix_) * state_cov_;
 }
 
-void EKF::updateStateByLaser(){
+void EKF::updateStateByLaser()
+{
   Eigen::MatrixXd Ht = laser_measurement_matrix_.transpose();
-  Eigen::MatrixXd S = (laser_measurement_matrix_ * state_cov_) * Ht 
-                      + laser_measurement_noise_cov_;
+  Eigen::MatrixXd S = (laser_measurement_matrix_ * state_cov_) * Ht + laser_measurement_noise_cov_;
   Eigen::MatrixXd K = state_cov_ * Ht * S.inverse();
   Eigen::VectorXd pred_measurement = laser_measurement_matrix_ * state_mean_;
   Eigen::VectorXd measurement_diff = measurement_ - pred_measurement;
@@ -145,8 +158,7 @@ Eigen::MatrixXd EKF::calculateJacobian()
   double z = std::pow(px, 2) + std::pow(py, 2);
   z = tools::addEpsIfZero(z);
   double a = (vx * py - vy * px) / std::pow(z, 1.5);
-  Eigen::MatrixXd jacobian = Eigen::MatrixXd::Zero(3, 4);
-
+  Eigen::MatrixXd jacobian(3,4); 
   jacobian << px / sqrt(z), py / sqrt(z), 0, 0,
       -py / z, px / z, 0, 0,
       py * a, -px * a, px / sqrt(z), py / sqrt(z);
@@ -172,6 +184,7 @@ Eigen::VectorXd EKF::PredMeasurement()
   return pred_measurement;
 }
 
-Eigen::VectorXd EKF::getStateMean(){
+Eigen::VectorXd EKF::getStateMean()
+{
   return state_mean_;
 }
