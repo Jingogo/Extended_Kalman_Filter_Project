@@ -1,4 +1,4 @@
-#include <iostream>
+#include<iostream>
 #include <cmath>
 #include "Eigen/Dense"
 #include "EKF.h"
@@ -53,7 +53,7 @@ void EKF::initEKF()
 
 void EKF::initStateMean()
 {
-  double px, py;
+  double px = 0 , py = 0;
   if (isRadar())
   {
     const double ro = measurement_[0];
@@ -66,6 +66,11 @@ void EKF::initStateMean()
     px = measurement_[0];
     py = measurement_[1];
   }
+  else
+  {
+    std::cerr << "Invalid sensor data" << std::endl;
+  }
+  
   state_mean_ << px, py, 0, 0;
 }
 
@@ -116,6 +121,10 @@ void EKF::updateState()
   {
     updateStateByLaser();
   }
+  else
+  {
+    std::cerr << "Invalid sensor data" << std::endl;
+  }
 }
 
 void EKF::updateStateByRadar()
@@ -124,7 +133,7 @@ void EKF::updateStateByRadar()
   Eigen::MatrixXd Ht = radar_measurement_matrix_.transpose();
   Eigen::MatrixXd S = (radar_measurement_matrix_ * state_cov_) * Ht + radar_measurement_noise_cov_;
   Eigen::MatrixXd K = state_cov_ * Ht * S.inverse();
-  Eigen::VectorXd pred_measurement = PredMeasurement();
+  Eigen::VectorXd pred_measurement = predMeasurement();
   Eigen::VectorXd measurement_diff = measurement_ - pred_measurement;
   tools::normalizeRadarMeasurement(measurement_diff);
   Eigen::MatrixXd I = Eigen::MatrixXd::Identity(4, 4);
@@ -166,7 +175,7 @@ Eigen::MatrixXd EKF::calculateJacobian()
   return jacobian;
 }
 
-Eigen::VectorXd EKF::PredMeasurement()
+Eigen::VectorXd EKF::predMeasurement()
 {
   double px = state_mean_(0);
   double py = state_mean_(1);

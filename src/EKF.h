@@ -1,9 +1,6 @@
 #ifndef EKF_H_
 #define EKF_H_
 
-#include <fstream>
-#include <string>
-#include <vector>
 #include "Eigen/Dense"
 #include "measurement_package.h"
 #include "tools.h"
@@ -26,7 +23,7 @@ public:
   void updateStateByLaser();
   void updateRadarMeasurementMatrix();
   Eigen::MatrixXd calculateJacobian();
-  Eigen::VectorXd PredMeasurement();
+  Eigen::VectorXd predMeasurement();
   bool isRadar(){return sensor_type_ == MeasurementPackage::RADAR;};
   bool isLaser(){return sensor_type_ == MeasurementPackage::LASER;};
 

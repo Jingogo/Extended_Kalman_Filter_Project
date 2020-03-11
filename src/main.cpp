@@ -2,21 +2,19 @@
 #include <iostream>     
 #include <fstream>
 #include <iomanip> 
-#include <math.h>
-#include <uWS/uWS.h>
-#include "json.hpp"
 #include "EKF.h"
 #include "tools.h"
 
 int main(int argc, char *argv[]){
   if (argc != 2){
-    std::cout << "The programs need two arguments" << std::endl;
+    std::cout << "This program need two arguments" << std::endl;
     return -1;
   }
 
   std::ifstream input_file(argv[1]);
   if (!input_file.is_open()){
-    std::cout << "Could not open data file" << argv[1] << std::endl;
+    std::cout << "Could not open data file " << argv[1] << std::endl;
+    return -1;
   }
 
   Eigen::MatrixXd R_laser(2, 2);
@@ -32,7 +30,7 @@ int main(int argc, char *argv[]){
  
   noise << 9.0, 9.0;
                       
-  EKF EKF(R_laser, R_radar,  noise);
+  EKF ekf(R_laser, R_radar,  noise);
   std::vector<Eigen::VectorXd> estimations;
   std::vector<Eigen::VectorXd> ground_truth;
   std::string line;
@@ -41,11 +39,11 @@ int main(int argc, char *argv[]){
     std::istringstream iss(line);
 
     MeasurementPackage meas_package = tools::readMeasurement(iss);
-    EKF.processMeasurement(meas_package);
+    ekf.processMeasurement(meas_package);
 
     Eigen::VectorXd gt_values = tools::readGroundTruth(iss);
     ground_truth.push_back(gt_values);
-    Eigen::VectorXd estimate = EKF.getStateMean();
+    Eigen::VectorXd estimate = ekf.getStateMean();
     estimations.push_back(estimate);
 
     Eigen::VectorXd RMSE = tools::calculateRMSE(estimations, ground_truth);
