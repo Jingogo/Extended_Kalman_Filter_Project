@@ -1,12 +1,9 @@
 # Overview
-In this repository, we implemented an Extended Kalman Filter to track a moving object based on radar measurements and lidar measurements.  
+In this repository, we implemented an Extended Kalman Filter to track a moving object based on radar measurements and lidar measurements. We adopted the Root Mean Square Error (RMSE) to measure the estimation error.
 
-The state of the object: $(x, y, v_x, v_y)$  
-Radar measurement: $(\rho, \phi, \dot{\rho})$  
-Lidar measurement: $(x, y)$
-
-We adopted the Root Mean Square Error (RMSE) to measure the estimation error.
-
+The state of the object: (x, y, v_x, v_y)  
+Radar measurement: (rho, phi, rho_dot)  
+Lidar measurement: (x, y)
 
 ## Sensor measurements 
 The `./data/obj_pose-laser-radar-synthetic-input.txt` file contains synthetic sensor measurements and the corresponding ground truth. Each line represent a measurement.
