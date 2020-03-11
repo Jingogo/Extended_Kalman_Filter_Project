@@ -1,5 +1,5 @@
 # Overview
-In this repository, we implemented an Extended Kalman Filter to track a moving object based on radar measurements and lidar measurements. We adopted the Root Mean Square Error (RMSE) to measure the estimation error.
+In this repository, I implemented an Extended Kalman Filter to track a moving object based on radar measurements and lidar measurements. The Root Mean Square Error (RMSE) was adopted to measure the estimation error.
 
 The state of the object: (x, y, v_x, v_y)  
 Radar measurement: (rho, phi, rho_dot)  
