@@ -13,7 +13,7 @@ For a radar meaurement, the line includes `sensor_type, rho_measured, phi_measur
 For a lidar measurement, the line includes `sensor_type, x_measured, y_measured, timestamp, x_groundtruth, y_groundtruth, vx_groundtruth, vy_groundtruth, yaw_groundtruth, yawrate_groundtruth`.
 
 ## Requirements
-Ubuntu
+Ubuntu:
 ```
 cmake >= 3.5
 gcc/g++ >= 5.4
