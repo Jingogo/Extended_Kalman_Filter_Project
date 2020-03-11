@@ -14,11 +14,11 @@ For a lidar measurement, the line includes `sensor_type, x_measured, y_measured,
 
 ## Requirements
 Ubuntu:
-
+```
 cmake >= 3.5
 gcc/g++ >= 5.4
 make >= 4.1
-
+```
 ## How to build and run this program
 
  ```
