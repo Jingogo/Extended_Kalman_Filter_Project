@@ -35,7 +35,7 @@ make >= 4.1
  <img src="./data/screenshot_final_output.jpg" width="200"/>
 
 ## Unit test
-Currently I have not test the project yet, but I plan to test it with Google Test in the future.
+Currently I have not tested the project yet, but I plan to test it with Google Test in the future.
 
 
 
