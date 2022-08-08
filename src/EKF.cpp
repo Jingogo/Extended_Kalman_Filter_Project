@@ -40,7 +40,7 @@ void EKF::readMeasurementPackage(const MeasurementPackage &measurement_pack)
   measurement_ = measurement_pack.raw_measurements_;
   sensor_type_ = measurement_pack.sensor_type_;
   long long new_timestamp = measurement_pack.timestamp_;
-  dt_ = (new_timestamp - previous_timestamp_) / 1000000.0;
+  millisecondsSinceLastMeasurement = (new_timestamp - previous_timestamp_) / 1000000.0;
   previous_timestamp_ = new_timestamp;
 }
 
@@ -92,17 +92,17 @@ void EKF::predictState()
 
 void EKF::updateStateTransitionMatrix()
 {
-  state_transition_matrix_ << 1, 0, dt_, 0,
-      0, 1, 0, dt_,
+  state_transition_matrix_ << 1, 0, millisecondsSinceLastMeasurement, 0,
+      0, 1, 0, millisecondsSinceLastMeasurement,
       0, 0, 1, 0,
       0, 0, 0, 1;
 }
 
 void EKF::updateProcessNoiseCov()
 {
-  const double dt_2 = dt_ * dt_;
-  const double dt_3 = dt_2 * dt_;
-  const double dt_4 = dt_3 * dt_;
+  const double dt_2 = millisecondsSinceLastMeasurement * millisecondsSinceLastMeasurement;
+  const double dt_3 = dt_2 * millisecondsSinceLastMeasurement;
+  const double dt_4 = dt_3 * millisecondsSinceLastMeasurement;
   double noise_ax = noise_(0);
   double noise_ay = noise_(1);
   process_noise_cov_ << dt_4 * noise_ax / 4, 0, dt_3 * noise_ax / 2, 0,

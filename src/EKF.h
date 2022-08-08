@@ -33,8 +33,8 @@ public:
  private:
   bool is_initialized_ = false;
   long long previous_timestamp_ = 0;
-  Eigen::VectorXd measurement_;
-  double dt_ = 0.0;
+  Eigen::VectorXd measurement_;  
+  double millisecondsSinceLastMeasurement = 0.0;
   MeasurementPackage::SensorType sensor_type_ = MeasurementPackage::RADAR;
 
   Eigen::VectorXd state_mean_;
